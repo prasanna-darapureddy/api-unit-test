@@ -1,0 +1,98 @@
+
+import React from 'react';
+import { render, waitFor, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import APICall from '../APICall';
+
+describe('APICall component', () => {
+    beforeEach(() => {
+        jest.spyOn(global, 'fetch').mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({
+                users: [
+                    {
+                        id: 1,
+                        firstName: 'John',
+                        lastName: 'Doe',
+                        age: 30,
+                        gender: 'Male',
+                        email: 'john.doe@example.com'
+                    },
+                    {
+                        id: 2,
+                        firstName: 'Jane',
+                        lastName: 'Doe',
+                        age: 25,
+                        gender: 'Female',
+                        email: 'jane.doe@example.com'
+                    }
+                ]
+            })
+        });
+    });
+
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('renders loading indicator when fetching data', async () => {
+        render(<APICall />);
+        const loadingIndicator = screen.getByTestId('loading-indicator');
+        expect(loadingIndicator).toBeInTheDocument();
+        await waitFor(() => expect(screen.queryByTestId('loading-indicator')).not.toBeInTheDocument());
+    });
+
+    it('renders list of users when data is fetched successfully', async () => {
+        render(<APICall />);
+        await waitFor(() => expect(screen.queryByTestId('usersList')).toBeInTheDocument());
+        expect(screen.getByText('Users')).toBeInTheDocument();
+        expect(screen.getByText('Name : John Doe')).toBeInTheDocument();
+        expect(screen.getByText('Email : john.doe@example.com')).toBeInTheDocument();
+        expect(screen.getByText('Gender : Male')).toBeInTheDocument();
+        expect(screen.getByText('Age : 30')).toBeInTheDocument();
+        expect(screen.getByText('Name : Jane Doe')).toBeInTheDocument();
+        expect(screen.getByText('Email : jane.doe@example.com')).toBeInTheDocument();
+        expect(screen.getByText('Gender : Female')).toBeInTheDocument();
+        expect(screen.getByText('Age : 25')).toBeInTheDocument();
+    });
+
+    it('renders error message when fetch fails', async () => {
+
+        jest.spyOn(global, 'fetch').mockResolvedValue({
+            ok: true,
+            status: 400,
+            json: async () => ({
+                users: [
+                    {
+                        id: 1,
+                        firstName: 'John',
+                        lastName: 'Doe',
+                        age: 30,
+                        gender: 'Male',
+                        email: 'john.doe@example.com'
+                    },
+                    {
+                        id: 2,
+                        firstName: 'Jane',
+                        lastName: 'Doe',
+                        age: 25,
+                        gender: 'Female',
+                        email: 'jane.doe@example.com'
+                    }
+                ]
+            })
+        });
+        render(<APICall />);
+        await waitFor(() => expect(screen.queryByTestId('error-message')).toBeInTheDocument());
+        expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    });
+
+    it('renders error message when fetch fails', async () => {
+        jest.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Failed to fetch'));
+        render(<APICall />);
+        await waitFor(() => expect(screen.queryByTestId('error-message')).toBeInTheDocument());
+        expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    });
+});
